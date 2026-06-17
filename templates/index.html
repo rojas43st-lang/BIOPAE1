@@ -1,0 +1,76 @@
+ <!DOCTYPE html>
+<html lang="es">
+<head>
+
+  <meta charset="UTF-8">
+
+  <title>Inicio de Sesión</title>
+
+ <link rel="stylesheet" href="/static/css/inicio.css">
+
+</head>
+
+<body>
+
+  <div class="login-container">
+
+    <img src="/static/imagenes/gordito.png" alt="Logo">
+
+    <h2>Iniciar Sesión</h2>
+
+    <input 
+      type="text"
+      id="usuario"
+      placeholder="Usuario"
+    >
+
+    <input 
+      type="password"
+      id="contrasena"
+      placeholder="Contraseña"
+    >
+
+    <button onclick="entrar()">
+
+      Entrar
+
+    </button>
+
+  </div>
+
+
+
+  <script>
+
+    function entrar() {
+
+      // Obtener datos
+
+      let usuario = document.getElementById("usuario").value;
+
+      let contrasena = document.getElementById("contrasena").value;
+
+
+
+      if (
+        usuario === "carloselcalvito"
+        &&
+        contrasena === "1234"
+      ) {
+
+        window.location.href="/menu";
+
+      }
+
+      else {
+
+        alert("Usuario o contraseña incorrectos");
+
+      }
+
+    }
+
+  </script>
+
+</body>
+</html>

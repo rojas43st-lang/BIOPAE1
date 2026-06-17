@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaso de Leche</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/static/css/vaso.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <h1>Vasos de leche restantes</h1>
+
+    <h2 id="numero">200</h2>
+
+    <!-- Imagen -->
+    <img id="escaner"
+     src="/static/imagenes/escaner.png"
+     alt="Escáner del vaso de leche">
+
+    <!-- Botón -->
+    <button id="regalado">Regalado</button>
+
+    <!-- Volver -->
+    <div class="volver">
+      <a href="/menu">⬅ Volver al menú</a>
+    </div>
+
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+      const STORAGE_KEY = 'vasos';
+      const INICIAL = 200;
+
+      const numeroEl = document.getElementById('numero');
+      const escanerImg = document.getElementById('escaner');
+      const btnRegalado = document.getElementById('regalado');
+
+      // Obtener datos guardados
+      let vasos = sessionStorage.getItem(STORAGE_KEY);
+
+      if (vasos === null || isNaN(parseInt(vasos, 10))) {
+        vasos = INICIAL;
+        sessionStorage.setItem(STORAGE_KEY, String(vasos));
+      } else {
+        vasos = parseInt(vasos, 10);
+      }
+
+      // Actualizar pantalla
+      function actualizarPantalla() {
+        numeroEl.textContent = vasos;
+        sessionStorage.setItem(STORAGE_KEY, String(vasos));
+      }
+
+      // Descontar vasos
+      function descontar() {
+
+        if (vasos > 0) {
+
+          vasos--;
+
+          actualizarPantalla();
+
+          if (vasos === 0) {
+            alert("Vasos de leche del día de hoy terminados");
+          }
+        }
+      }
+
+      // Eventos
+      escanerImg.addEventListener('click', descontar);
+      btnRegalado.addEventListener('click', descontar);
+
+      actualizarPantalla();
+
+    });
+  </script>
+
+</body>
+</html>

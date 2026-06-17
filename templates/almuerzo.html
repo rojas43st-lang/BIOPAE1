@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Almuerzos</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <h1>Almuerzos restantes</h1>
+
+    <h2 id="numero">100</h2>
+
+    <!-- Imagen -->
+    <img id="escaner"
+     src="/static/imagenes/pnwe-removebg-preview (1).png"
+     alt="Escáner">
+
+    <!-- Botón -->
+    <button id="regalado">Regalar</button>
+
+    <!-- Volver -->
+    <div class="volver">
+    <a href="/menu">⬅ Volver al menú</a>
+    </div>
+
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+      const STORAGE_KEY = 'almuerzos';
+      const INICIAL = 100;
+
+      const numeroEl = document.getElementById('numero');
+      const escanerImg = document.getElementById('escaner');
+      const btnRegalado = document.getElementById('regalado');
+
+      // Obtener datos guardados
+      let almuerzos = sessionStorage.getItem(STORAGE_KEY);
+
+      if (almuerzos === null || isNaN(parseInt(almuerzos, 10))) {
+
+        almuerzos = INICIAL;
+
+        sessionStorage.setItem(STORAGE_KEY, String(almuerzos));
+
+      } else {
+
+        almuerzos = parseInt(almuerzos, 10);
+
+      }
+
+      // Actualizar pantalla
+      function actualizarPantalla() {
+
+        numeroEl.textContent = almuerzos;
+
+        sessionStorage.setItem(STORAGE_KEY, String(almuerzos));
+
+      }
+
+      // Descontar almuerzos
+      function descontar() {
+
+        if (almuerzos > 0) {
+
+          almuerzos--;
+
+          actualizarPantalla();
+
+          if (almuerzos === 0) {
+
+            alert("Almuerzos del día de hoy terminados");
+
+          }
+        }
+      }
+
+      // Eventos
+      escanerImg.addEventListener('click', descontar);
+      btnRegalado.addEventListener('click', descontar);
+
+      actualizarPantalla();
+
+    });
+  </script>
+
+</body>
+</html>
