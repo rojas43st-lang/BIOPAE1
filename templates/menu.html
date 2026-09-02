@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <title>Menú PAE</title>
@@ -9,9 +10,17 @@
 
 <body>
 
+  <!-- =====================================================
+       MENÚ PRINCIPAL
+  ====================================================== -->
+
   <div class="content">
 
-    <img src="/static/imagenes/gordito.png" alt="Logo" class="logo">
+    <img
+      src="/static/imagenes/gordito.png"
+      alt="Logo"
+      class="logo"
+    >
 
     <h1>Distribución PAE</h1>
 
@@ -20,31 +29,36 @@
     <div class="menu">
 
       <a href="/vaso" class="card">
-        
-
         🥛 Vaso de leche
-
       </a>
 
       <a href="/almuerzo" class="card">
-
         🍽 Almuerzo
+      </a>
 
+      <a href="/scanner" class="card">
+        📷 Escanear QR
       </a>
 
     </div>
 
-    <button class="logout-btn" onclick="cerrarSesion()">
-
+    <button
+      class="logout-btn"
+      onclick="cerrarSesion()"
+    >
       Cerrar sesión
-
     </button>
 
   </div>
 
+
+  <!-- =====================================================
+       CERRAR SESIÓN
+  ====================================================== -->
+
   <script>
 
-    function cerrarSesion(){
+    function cerrarSesion() {
 
       window.location.href = "/";
 
@@ -52,42 +66,62 @@
 
   </script>
 
+
+  <!-- =====================================================
+       SCRIPT PRINCIPAL
+  ====================================================== -->
+
   <script src="/static/js/script.js"></script>
+
+
+  <!-- =====================================================
+       MENÚ DE TRES PUNTOS
+  ====================================================== -->
 
   <div class="menu-container">
 
-    <button class="menu-btn" onclick="toggleMenu()">
-
+    <button
+      class="menu-btn"
+      onclick="toggleMenu()"
+    >
       ⋮
-
     </button>
 
-    <div class="menu-opciones" id="menuOpciones">
+
+    <div
+      class="menu-opciones"
+      id="menuOpciones"
+    >
 
       <p onclick="abrirModal('alimentos')">
-
         Alimentos entregados
-
       </p>
 
       <p onclick="abrirModal('asistencias')">
-
         Asistencias
-
       </p>
 
     </div>
 
   </div>
 
-  <div class="modal" id="modal">
+
+  <!-- =====================================================
+       MODAL GENERAL
+  ====================================================== -->
+
+  <div
+    class="modal"
+    id="modal"
+  >
 
     <div class="modal-contenido">
 
-      <span class="cerrar" onclick="cerrarModal()">
-
+      <span
+        class="cerrar"
+        onclick="cerrarModal()"
+      >
         &times;
-
       </span>
 
       <div id="contenidoModal"></div>
@@ -96,222 +130,627 @@
 
   </div>
 
-  <button class="panel-btn" onclick="abrirPanel()">
 
+  <!-- =====================================================
+       BOTÓN PANEL
+  ====================================================== -->
+
+  <button
+    class="panel-btn"
+    onclick="abrirPanelReal()"
+  >
     📊 Panel
-
   </button>
 
-  <div class="modal" id="panelModal">
 
-    <div class="modal-contenido">
+  <!-- =====================================================
+       PANEL ADMINISTRATIVO
+  ====================================================== -->
 
-      <span class="cerrar" onclick="cerrarPanel()">
+  <div
+    class="modal"
+    id="panelModal"
+  >
 
+    <div
+      class="modal-contenido"
+      style="max-width: 1000px;"
+    >
+
+      <span
+        class="cerrar"
+        onclick="cerrarPanelReal()"
+      >
         &times;
-
       </span>
+
 
       <div id="panelInicio">
 
         <h1>
-
           Panel administrativo BIOPAE
-
         </h1>
 
         <h3 style="margin-top:20px;">
-
-          Consultar datos de esta semana
-
+          Consultar entregas
         </h3>
 
         <p style="margin-top:10px;">
-
-          Busque la fecha requerida
-
+          Seleccione una fecha para consultar los datos registrados en Neon.
         </p>
 
-        <input
 
-          type="date"
-
-          id="fechaBuscar"
-
-          style="margin-top:20px;padding:12px;width:250px;border-radius:10px;border:2px solid #1f7a8c;"
-
-        >
+        <!-- =================================================
+             BUSCAR FECHA
+        ================================================== -->
 
         <div
-
-          class="lista-fechas"
-
-          style="margin-top:30px;
-          display:grid;
-          grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-          gap:10px;"
-
+          style="
+            margin-top:25px;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            gap:10px;
+            flex-wrap:wrap;
+          "
         >
 
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-02')">02/03/2026</button>
+          <input
+            type="date"
+            id="fechaBuscar"
+            style="
+              padding:12px;
+              width:220px;
+              border-radius:10px;
+              border:2px solid #1f7a8c;
+              font-size:16px;
+            "
+          >
 
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-03')">03/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-04')">04/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-05')">05/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-06')">06/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-09')">09/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-10')">10/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-11')">11/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-12')">12/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-13')">13/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-16')">16/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-17')">17/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-18')">18/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-19')">19/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-20')">20/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-23')">23/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-24')">24/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-25')">25/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-26')">26/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-27')">27/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-30')">30/03/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-03-31')">31/03/2026</button>
-
-                    <button class="fecha-btn" onclick="mostrarFecha('2026-04-01')">01/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-06')">06/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-07')">07/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-08')">08/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-09')">09/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-10')">10/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-13')">13/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-14')">14/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-15')">15/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-16')">16/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-17')">17/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-20')">20/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-21')">21/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-22')">22/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-23')">23/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-24')">24/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-27')">27/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-28')">28/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-29')">29/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-04-30')">30/04/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-04')">04/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-05')">05/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-06')">06/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-07')">07/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-08')">08/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-11')">11/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-12')">12/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-13')">13/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-14')">14/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-15')">15/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-18')">18/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-19')">19/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-20')">20/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-21')">21/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-22')">22/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-25')">25/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-26')">26/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-27')">27/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-28')">28/05/2026</button>
-
-          <button class="fecha-btn" onclick="mostrarFecha('2026-05-29')">29/05/2026</button>
+          <button
+            class="fecha-btn"
+            onclick="cargarFechaPanel()"
+          >
+            🔎 Consultar
+          </button>
 
         </div>
 
-        <div id="estadisticasDia" style="display:none; margin-top:25px;">
+
+        <!-- =================================================
+             MENSAJE
+        ================================================== -->
+
+        <div
+          id="mensajePanel"
+          style="
+            margin-top:20px;
+            text-align:center;
+            font-weight:bold;
+          "
+        ></div>
+
+
+        <!-- =================================================
+             ESTADÍSTICAS
+        ================================================== -->
+
+        <div
+          id="estadisticasDia"
+          style="
+            display:none;
+            margin-top:30px;
+          "
+        >
 
           <h2 id="tituloFecha"></h2>
 
-          <div id="contenidoEstadisticas"></div>
 
-          <button class="logout-btn" onclick="volverLista()">
+          <!-- TARJETAS -->
 
+          <div
+            style="
+              display:grid;
+              grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+              gap:15px;
+              margin-top:20px;
+            "
+          >
+
+            <div
+              style="
+                background:#e8f5e9;
+                padding:20px;
+                border-radius:15px;
+                text-align:center;
+              "
+            >
+
+              <h3>🥛 Vaso de leche</h3>
+
+              <h2 id="totalVasos">
+                0
+              </h2>
+
+              <p>
+                entregados
+              </p>
+
+            </div>
+
+
+            <div
+              style="
+                background:#fff3e0;
+                padding:20px;
+                border-radius:15px;
+                text-align:center;
+              "
+            >
+
+              <h3>🍽 Almuerzo</h3>
+
+              <h2 id="totalAlmuerzos">
+                0
+              </h2>
+
+              <p>
+                entregados
+              </p>
+
+            </div>
+
+
+            <div
+              style="
+                background:#e3f2fd;
+                padding:20px;
+                border-radius:15px;
+                text-align:center;
+              "
+            >
+
+              <h3>👥 Total</h3>
+
+              <h2 id="totalEntregas">
+                0
+              </h2>
+
+              <p>
+                entregas
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <!-- =================================================
+               TABLA DE ENTREGAS
+          ================================================== -->
+
+          <h2 style="margin-top:30px;">
+            Entregas del día
+          </h2>
+
+
+          <div
+            style="
+              overflow-x:auto;
+              margin-top:15px;
+            "
+          >
+
+            <table
+              style="
+                width:100%;
+                border-collapse:collapse;
+                background:white;
+                color:#222;
+              "
+            >
+
+              <thead>
+
+                <tr>
+
+                  <th
+                    style="
+                      padding:12px;
+                      border-bottom:2px solid #ddd;
+                    "
+                  >
+                    Estudiante
+                  </th>
+
+                  <th
+                    style="
+                      padding:12px;
+                      border-bottom:2px solid #ddd;
+                    "
+                  >
+                    Alimento
+                  </th>
+
+                  <th
+                    style="
+                      padding:12px;
+                      border-bottom:2px solid #ddd;
+                    "
+                  >
+                    Hora
+                  </th>
+
+                  <th
+                    style="
+                      padding:12px;
+                      border-bottom:2px solid #ddd;
+                    "
+                  >
+                    Estado
+                  </th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody id="tablaEntregas">
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+
+          <!-- =================================================
+               VOLVER
+          ================================================== -->
+
+          <button
+            class="logout-btn"
+            onclick="volverPanelInicio()"
+            style="margin-top:25px;"
+          >
             ← Volver
-
           </button>
 
         </div>
 
       </div>
 
-          </div>
+    </div>
 
   </div>
 
+
+  <!-- =====================================================
+       JAVASCRIPT DEL PANEL
+  ====================================================== -->
+
   <script>
 
-    document.getElementById("fechaBuscar").addEventListener("change",function(){
+    /*
+     * Abrir panel
+     */
 
-      const valor=this.value;
+    function abrirPanelReal() {
 
-      if(valor!=""){
+      document.getElementById("panelModal").style.display = "flex";
 
-        mostrarFecha(valor);
+    }
+
+
+    /*
+     * Cerrar panel
+     */
+
+    function cerrarPanelReal() {
+
+      document.getElementById("panelModal").style.display = "none";
+
+    }
+
+
+    /*
+     * Consultar fecha
+     */
+
+    async function cargarFechaPanel() {
+
+      const fecha =
+        document.getElementById("fechaBuscar").value;
+
+      const mensaje =
+        document.getElementById("mensajePanel");
+
+      const estadisticas =
+        document.getElementById("estadisticasDia");
+
+      const tabla =
+        document.getElementById("tablaEntregas");
+
+
+      /*
+       * Comprobar que haya fecha
+       */
+
+      if (!fecha) {
+
+        mensaje.textContent =
+          "⚠️ Seleccione una fecha.";
+
+        mensaje.style.color = "red";
+
+        estadisticas.style.display = "none";
+
+        return;
 
       }
 
-    });
+
+      /*
+       * Mensaje mientras carga
+       */
+
+      mensaje.textContent =
+        "⏳ Consultando Neon...";
+
+      mensaje.style.color = "#1f7a8c";
+
+
+      try {
+
+        /*
+         * Consultar API
+         */
+
+        const respuesta =
+          await fetch(
+            `/api/entregas?fecha=${fecha}`
+          );
+
+
+        const datos =
+          await respuesta.json();
+
+
+        /*
+         * Comprobar respuesta
+         */
+
+        if (!respuesta.ok || !datos.ok) {
+
+          throw new Error(
+            datos.mensaje ||
+            "No fue posible consultar los datos."
+          );
+
+        }
+
+
+        /*
+         * Mostrar estadísticas
+         */
+
+        const entregas =
+          datos.entregas || [];
+
+
+        let vasos = 0;
+
+        let almuerzos = 0;
+
+
+        entregas.forEach(function(entrega) {
+
+          if (entrega.alimento_id == 1) {
+
+            vasos++;
+
+          }
+
+          if (entrega.alimento_id == 2) {
+
+            almuerzos++;
+
+          }
+
+        });
+
+
+        document.getElementById(
+          "totalVasos"
+        ).textContent = vasos;
+
+
+        document.getElementById(
+          "totalAlmuerzos"
+        ).textContent = almuerzos;
+
+
+        document.getElementById(
+          "totalEntregas"
+        ).textContent = entregas.length;
+
+
+        /*
+         * Formatear fecha
+         */
+
+        const partes =
+          fecha.split("-");
+
+        const fechaBonita =
+          `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+
+        document.getElementById(
+          "tituloFecha"
+        ).textContent =
+          `📅 Entregas del ${fechaBonita}`;
+
+
+        /*
+         * Limpiar tabla
+         */
+
+        tabla.innerHTML = "";
+
+
+        /*
+         * Si no hay entregas
+         */
+
+        if (entregas.length === 0) {
+
+          tabla.innerHTML = `
+            <tr>
+              <td
+                colspan="4"
+                style="
+                  padding:20px;
+                  text-align:center;
+                "
+              >
+                📭 No hay entregas registradas
+                para esta fecha.
+              </td>
+            </tr>
+          `;
+
+        }
+
+
+        /*
+         * Crear filas
+         */
+
+        entregas.forEach(function(entrega) {
+
+          const fila =
+            document.createElement("tr");
+
+
+          const nombreCompleto =
+            `${entrega.nombre} ${entrega.apellido}`;
+
+
+          fila.innerHTML = `
+
+            <td
+              style="
+                padding:12px;
+                border-bottom:1px solid #ddd;
+              "
+            >
+              ${nombreCompleto}
+            </td>
+
+            <td
+              style="
+                padding:12px;
+                border-bottom:1px solid #ddd;
+              "
+            >
+              ${
+                entrega.alimento_id == 1
+                ? "🥛 Vaso de leche"
+                : "🍽 Almuerzo"
+              }
+            </td>
+
+            <td
+              style="
+                padding:12px;
+                border-bottom:1px solid #ddd;
+              "
+            >
+              ${entrega.hora}
+            </td>
+
+            <td
+              style="
+                padding:12px;
+                border-bottom:1px solid #ddd;
+              "
+            >
+              ${
+                entrega.estado === "entregado"
+                ? "✅ Entregado"
+                : entrega.estado
+              }
+            </td>
+
+          `;
+
+
+          tabla.appendChild(fila);
+
+        });
+
+
+        /*
+         * Mostrar resultados
+         */
+
+        estadisticas.style.display = "block";
+
+        mensaje.textContent =
+          "✅ Datos cargados correctamente.";
+
+        mensaje.style.color = "green";
+
+      }
+
+      catch (error) {
+
+        console.error(error);
+
+        mensaje.textContent =
+          "❌ Error al consultar los datos.";
+
+        mensaje.style.color = "red";
+
+        estadisticas.style.display = "none";
+
+      }
+
+    }
+
+
+    /*
+     * Volver
+     */
+
+    function volverPanelInicio() {
+
+      document.getElementById(
+        "estadisticasDia"
+      ).style.display = "none";
+
+      document.getElementById(
+        "mensajePanel"
+      ).textContent = "";
+
+    }
+
+
+    /*
+     * Permitir presionar Enter
+     */
+
+    document.getElementById(
+      "fechaBuscar"
+    ).addEventListener(
+      "change",
+      function() {
+
+        cargarFechaPanel();
+
+      }
+    );
 
   </script>
 

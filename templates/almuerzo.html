@@ -1,94 +1,133 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
   <meta charset="UTF-8">
+
   <title>Almuerzos</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="/static/css/styles.css">
+  <link
+    rel="stylesheet"
+    href="/static/css/styles.css"
+  >
+
 </head>
+
 <body>
 
   <div class="container">
 
     <h1>Almuerzos restantes</h1>
 
-    <h2 id="numero">100</h2>
+    <h2 id="numero">Cargando...</h2>
 
-    <!-- Imagen -->
-    <img id="escaner"
-     src="/static/imagenes/pnwe-removebg-preview (1).png"
-     alt="Escáner">
+    <a href="/scanner?alimento=2">
 
-    <!-- Botón -->
-    <button id="regalado">Regalar</button>
+      <img
+        id="escaner"
+        src="/static/imagenes/pnwe-removebg-preview (1).png"
+        alt="Escanear almuerzo"
+      >
 
-    <!-- Volver -->
+    </a>
+
+    <p>
+      📷 Escanea el QR del estudiante
+    </p>
+
     <div class="volver">
-    <a href="/menu">⬅ Volver al menú</a>
+
+      <a href="/menu">
+        ⬅ Volver al menú
+      </a>
+
     </div>
 
   </div>
 
+
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
 
-      const STORAGE_KEY = 'almuerzos';
-      const INICIAL = 100;
+    const numeroEl = document.getElementById('numero');
+    const escanerImg = document.getElementById('escaner');
+    const btnRegalado = document.getElementById('regalado');
 
-      const numeroEl = document.getElementById('numero');
-      const escanerImg = document.getElementById('escaner');
-      const btnRegalado = document.getElementById('regalado');
+    const ALIMENTO_ID = 2;
 
-      // Obtener datos guardados
-      let almuerzos = sessionStorage.getItem(STORAGE_KEY);
+    async function cargarCantidad() {
 
-      if (almuerzos === null || isNaN(parseInt(almuerzos, 10))) {
+        try {
 
-        almuerzos = INICIAL;
+            const respuesta = await fetch(`/api/alimentos/${ALIMENTO_ID}`);
 
-        sessionStorage.setItem(STORAGE_KEY, String(almuerzos));
+            const datos = await respuesta.json();
 
-      } else {
+            if (!datos.ok) {
+                alert(datos.mensaje);
+                return;
+            }
 
-        almuerzos = parseInt(almuerzos, 10);
+            numeroEl.textContent = datos.cantidad;
 
-      }
+        } catch (error) {
 
-      // Actualizar pantalla
-      function actualizarPantalla() {
+            console.error(error);
 
-        numeroEl.textContent = almuerzos;
+            alert("No se pudo consultar la cantidad de almuerzos.");
 
-        sessionStorage.setItem(STORAGE_KEY, String(almuerzos));
-
-      }
-
-      // Descontar almuerzos
-      function descontar() {
-
-        if (almuerzos > 0) {
-
-          almuerzos--;
-
-          actualizarPantalla();
-
-          if (almuerzos === 0) {
-
-            alert("Almuerzos del día de hoy terminados");
-
-          }
         }
-      }
+    }
 
-      // Eventos
-      escanerImg.addEventListener('click', descontar);
-      btnRegalado.addEventListener('click', descontar);
 
-      actualizarPantalla();
+    async function descontar() {
 
-    });
-  </script>
+        try {
+
+            const respuesta = await fetch(
+                `/api/alimentos/${ALIMENTO_ID}/descontar`,
+                {
+                    method: "POST"
+                }
+            );
+
+            const datos = await respuesta.json();
+
+            if (!respuesta.ok || !datos.ok) {
+
+                alert(datos.mensaje || "No se pudo descontar el almuerzo.");
+
+                return;
+            }
+
+            numeroEl.textContent = datos.cantidad;
+
+            if (datos.cantidad === 0) {
+
+                alert("Almuerzos del día de hoy terminados.");
+
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert("Error de conexión con el servidor.");
+
+        }
+    }
+
+
+    escanerImg.addEventListener('click', descontar);
+
+    btnRegalado.addEventListener('click', descontar);
+
+    cargarCantidad();
+
+});
+</script>
 
 </body>
+
 </html>

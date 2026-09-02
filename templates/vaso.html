@@ -1,84 +1,132 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
   <meta charset="UTF-8">
+
   <title>Vaso de Leche</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="/static/css/vaso.css">
+  <link
+    rel="stylesheet"
+    href="/static/css/vaso.css"
+  >
+
 </head>
+
 <body>
 
   <div class="container">
 
     <h1>Vasos de leche restantes</h1>
 
-    <h2 id="numero">200</h2>
+    <h2 id="numero">Cargando...</h2>
 
-    <!-- Imagen -->
-    <img id="escaner"
-     src="/static/imagenes/escaner.png"
-     alt="Escáner del vaso de leche">
+    <a href="/scanner?alimento=1">
 
-    <!-- Botón -->
-    <button id="regalado">Regalado</button>
+      <img
+        id="escaner"
+        src="/static/imagenes/escaner.png"
+        alt="Escanear vaso de leche"
+      >
 
-    <!-- Volver -->
+    </a>
+
+    <p>
+      📷 Escanea el QR del estudiante
+    </p>
+
     <div class="volver">
-      <a href="/menu">⬅ Volver al menú</a>
+
+      <a href="/menu">
+        ⬅ Volver al menú
+      </a>
+
     </div>
 
   </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
 
-      const STORAGE_KEY = 'vasos';
-      const INICIAL = 200;
+    const numeroEl = document.getElementById('numero');
+    const escanerImg = document.getElementById('escaner');
+    const btnRegalado = document.getElementById('regalado');
 
-      const numeroEl = document.getElementById('numero');
-      const escanerImg = document.getElementById('escaner');
-      const btnRegalado = document.getElementById('regalado');
+    const ALIMENTO_ID = 1;
 
-      // Obtener datos guardados
-      let vasos = sessionStorage.getItem(STORAGE_KEY);
+    async function cargarCantidad() {
 
-      if (vasos === null || isNaN(parseInt(vasos, 10))) {
-        vasos = INICIAL;
-        sessionStorage.setItem(STORAGE_KEY, String(vasos));
-      } else {
-        vasos = parseInt(vasos, 10);
-      }
+        try {
 
-      // Actualizar pantalla
-      function actualizarPantalla() {
-        numeroEl.textContent = vasos;
-        sessionStorage.setItem(STORAGE_KEY, String(vasos));
-      }
+            const respuesta = await fetch(`/api/alimentos/${ALIMENTO_ID}`);
 
-      // Descontar vasos
-      function descontar() {
+            const datos = await respuesta.json();
 
-        if (vasos > 0) {
+            if (!datos.ok) {
+                alert(datos.mensaje);
+                return;
+            }
 
-          vasos--;
+            numeroEl.textContent = datos.cantidad;
 
-          actualizarPantalla();
+        } catch (error) {
 
-          if (vasos === 0) {
-            alert("Vasos de leche del día de hoy terminados");
-          }
+            console.error(error);
+
+            alert("No se pudo consultar la cantidad de vasos.");
+
         }
-      }
+    }
 
-      // Eventos
-      escanerImg.addEventListener('click', descontar);
-      btnRegalado.addEventListener('click', descontar);
 
-      actualizarPantalla();
+    async function descontar() {
 
-    });
-  </script>
+        try {
+
+            const respuesta = await fetch(
+                `/api/alimentos/${ALIMENTO_ID}/descontar`,
+                {
+                    method: "POST"
+                }
+            );
+
+            const datos = await respuesta.json();
+
+            if (!respuesta.ok || !datos.ok) {
+
+                alert(datos.mensaje || "No se pudo descontar el vaso.");
+
+                return;
+            }
+
+            numeroEl.textContent = datos.cantidad;
+
+            if (datos.cantidad === 0) {
+
+                alert("Vasos de leche del día de hoy terminados.");
+
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert("Error de conexión con el servidor.");
+
+        }
+    }
+
+
+    escanerImg.addEventListener('click', descontar);
+
+    btnRegalado.addEventListener('click', descontar);
+
+    cargarCantidad();
+
+});
+</script>
 
 </body>
+
 </html>

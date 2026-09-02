@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Escáner BIOPAE</title>
+
+    <style>
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            background: #f4f6f8;
+
+            margin: 0;
+
+            padding: 20px;
+
+            text-align: center;
+
+        }
+
+        h1 {
+
+            margin-bottom: 5px;
+
+        }
+
+        #tipoAlimento {
+
+            font-size: 20px;
+
+            font-weight: bold;
+
+            margin: 15px;
+
+        }
+
+        #reader {
+
+            width: 100%;
+
+            max-width: 500px;
+
+            margin: 20px auto;
+
+            background: white;
+
+            border-radius: 15px;
+
+            padding: 10px;
+
+            box-shadow:
+                0 4px 15px
+                rgba(0,0,0,0.15);
+
+        }
+
+        #resultado {
+
+            max-width: 500px;
+
+            margin: 20px auto;
+
+            padding: 20px;
+
+            background: white;
+
+            border-radius: 15px;
+
+            display: none;
+
+        }
+
+        #mensaje {
+
+            margin-top: 15px;
+
+            font-weight: bold;
+
+        }
+
+        .boton {
+
+            display: inline-block;
+
+            border: none;
+
+            padding: 14px 25px;
+
+            margin: 8px;
+
+            border-radius: 10px;
+
+            font-size: 16px;
+
+            cursor: pointer;
+
+            text-decoration: none;
+
+        }
+
+        .nuevo {
+
+            background: #555;
+
+            color: white;
+
+        }
+
+        .volver {
+
+            background: #777;
+
+            color: white;
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <h1>📷 Escáner BIOPAE</h1>
+
+
+    <p>
+
+        Escanea el código QR del estudiante
+
+    </p>
+
+
+    <div id="tipoAlimento"></div>
+
+
+    <div id="reader"></div>
+
+
+    <div id="resultado">
+
+        <h2>
+            ✅ Estudiante encontrado
+        </h2>
+
+        <p>
+
+            ID del estudiante:
+
+            <strong id="codigo"></strong>
+
+        </p>
+
+
+        <p id="mensaje"></p>
+
+
+        <button
+            class="boton nuevo"
+            onclick="nuevoEscaneo()"
+        >
+
+            📷 Escanear otro
+
+        </button>
+
+
+        <a
+            id="volver"
+            class="boton volver"
+            href="/menu"
+        >
+
+            ⬅ Volver
+
+        </a>
+
+    </div>
+
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+
+    <script>
+
+
+        // ================================================
+        // ALIMENTO SELECCIONADO
+        // ================================================
+
+        const alimentoId =
+            Number("{{ alimento_id }}");
+
+
+        const tipoAlimento =
+            document.getElementById(
+                "tipoAlimento"
+            );
+
+
+        const volver =
+            document.getElementById(
+                "volver"
+            );
+
+
+        if (alimentoId === 1) {
+
+            tipoAlimento.textContent =
+                "🥛 Vaso de leche";
+
+            volver.href = "/vaso";
+
+        }
+
+        else if (alimentoId === 2) {
+
+            tipoAlimento.textContent =
+                "🍛 Almuerzo";
+
+            volver.href = "/almuerzo";
+
+        }
+
+
+        // ================================================
+        // VARIABLES
+        // ================================================
+
+        let codigoEscaneado = null;
+
+        let escanerActivo = true;
+
+
+        // ================================================
+        // QR ENCONTRADO
+        // ================================================
+
+        function cuandoEscaneaQR(texto) {
+
+            if (!escanerActivo) {
+
+                return;
+
+            }
+
+
+            escanerActivo = false;
+
+
+            codigoEscaneado =
+                texto.trim();
+
+
+            document.getElementById(
+                "codigo"
+            ).textContent =
+                codigoEscaneado;
+
+
+            document.getElementById(
+                "resultado"
+            ).style.display =
+                "block";
+
+
+            scanner.clear().catch(
+                error => {
+
+                    console.log(
+                        error
+                    );
+
+                }
+            );
+
+
+            registrarEntrega();
+
+        }
+
+
+        // ================================================
+        // ERRORES DEL LECTOR
+        // ================================================
+
+        function errorEscaneo(error) {
+
+            // No hacemos nada.
+            // Se ejecuta mientras busca un QR.
+
+        }
+
+
+        // ================================================
+        // CREAR ESCÁNER
+        // ================================================
+
+        const scanner =
+            new Html5QrcodeScanner(
+                "reader",
+                {
+
+                    fps: 10,
+
+                    qrbox: {
+
+                        width: 250,
+
+                        height: 250
+
+                    }
+
+                },
+
+                false
+            );
+
+
+        scanner.render(
+            cuandoEscaneaQR,
+            errorEscaneo
+        );
+
+
+        // ================================================
+        // REGISTRAR ENTREGA
+        // ================================================
+
+        async function registrarEntrega() {
+
+
+            if (!codigoEscaneado) {
+
+                return;
+
+            }
+
+
+            const mensaje =
+                document.getElementById(
+                    "mensaje"
+                );
+
+
+            mensaje.textContent =
+                "⏳ Registrando entrega...";
+
+
+            // El QR contiene el ID
+            // del estudiante.
+
+            const estudianteId =
+                Number(codigoEscaneado);
+
+
+            if (
+                !Number.isInteger(
+                    estudianteId
+                )
+            ) {
+
+                mensaje.textContent =
+                    "❌ El QR no contiene un ID válido.";
+
+                return;
+
+            }
+
+
+            try {
+
+
+                const respuesta =
+                    await fetch(
+                        "/api/escaneo",
+                        {
+
+                            method: "POST",
+
+                            headers: {
+
+                                "Content-Type":
+                                    "application/json"
+
+                            },
+
+                            body: JSON.stringify({
+
+                                estudiante_id:
+                                    estudianteId,
+
+                                alimento_id:
+                                    alimentoId
+
+                            })
+
+                        }
+                    );
+
+
+                const datos =
+                    await respuesta.json();
+
+
+                if (
+                    respuesta.ok &&
+                    datos.ok
+                ) {
+
+
+                    mensaje.textContent =
+                        "✅ " +
+                        datos.estudiante +
+                        " recibió " +
+                        datos.alimento +
+                        ". Quedan " +
+                        datos.cantidad_restante;
+
+
+                }
+
+                else {
+
+
+                    mensaje.textContent =
+                        "❌ " +
+                        (
+                            datos.mensaje ||
+                            "No se pudo registrar."
+                        );
+
+                }
+
+
+            }
+
+            catch (error) {
+
+
+                console.error(error);
+
+
+                mensaje.textContent =
+                    "❌ Error de conexión con BIOPAE.";
+
+            }
+
+        }
+
+
+        // ================================================
+        // NUEVO ESCANEO
+        // ================================================
+
+        function nuevoEscaneo() {
+
+            location.reload();
+
+        }
+
+
+    </script>
+
+
+</body>
+
+</html>
