@@ -1,133 +1,34 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-
   <meta charset="UTF-8">
-
-  <title>Almuerzos</title>
-
-  <link
-    rel="stylesheet"
-    href="/static/css/styles.css"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Almuerzos - BIOPAE</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
-
 <body>
-
-  <div class="container">
-
+  <main class="container">
     <h1>Almuerzos restantes</h1>
 
-    <h2 id="numero">Cargando...</h2>
+    <section id="cantidad-alimento"
+             aria-live="polite"
+             hx-get="/fragmentos/alimentos/2/cantidad"
+             hx-trigger="load, every 30s"
+             hx-swap="innerHTML">
+      Cargando cantidad...
+    </section>
 
     <a href="/scanner?alimento=2">
-
-      <img
-        id="escaner"
-        src="/static/imagenes/pnwe-removebg-preview (1).png"
-        alt="Escanear almuerzo"
-      >
-
+      <img src="/static/imagenes/pnwe-removebg-preview (1).png"
+           alt="Abrir escáner de almuerzos">
     </a>
 
-    <p>
-      📷 Escanea el QR del estudiante
-    </p>
+    <p>📷 Escanea el QR del estudiante para registrar la entrega.</p>
 
     <div class="volver">
-
-      <a href="/menu">
-        ⬅ Volver al menú
-      </a>
-
+      <a href="/menu">⬅ Volver al menú</a>
     </div>
-
-  </div>
-
-
-  <script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    const numeroEl = document.getElementById('numero');
-    const escanerImg = document.getElementById('escaner');
-    const btnRegalado = document.getElementById('regalado');
-
-    const ALIMENTO_ID = 2;
-
-    async function cargarCantidad() {
-
-        try {
-
-            const respuesta = await fetch(`/api/alimentos/${ALIMENTO_ID}`);
-
-            const datos = await respuesta.json();
-
-            if (!datos.ok) {
-                alert(datos.mensaje);
-                return;
-            }
-
-            numeroEl.textContent = datos.cantidad;
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert("No se pudo consultar la cantidad de almuerzos.");
-
-        }
-    }
-
-
-    async function descontar() {
-
-        try {
-
-            const respuesta = await fetch(
-                `/api/alimentos/${ALIMENTO_ID}/descontar`,
-                {
-                    method: "POST"
-                }
-            );
-
-            const datos = await respuesta.json();
-
-            if (!respuesta.ok || !datos.ok) {
-
-                alert(datos.mensaje || "No se pudo descontar el almuerzo.");
-
-                return;
-            }
-
-            numeroEl.textContent = datos.cantidad;
-
-            if (datos.cantidad === 0) {
-
-                alert("Almuerzos del día de hoy terminados.");
-
-            }
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert("Error de conexión con el servidor.");
-
-        }
-    }
-
-
-    escanerImg.addEventListener('click', descontar);
-
-    btnRegalado.addEventListener('click', descontar);
-
-    cargarCantidad();
-
-});
-</script>
-
+  </main>
 </body>
-
 </html>
