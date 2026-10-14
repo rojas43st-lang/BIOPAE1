@@ -1,46 +1,28 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inicio de Sesión - BIOPAE</title>
-
-    <link rel="stylesheet" href="/static/css/inicio.css">
-
-    <!-- HTMX: permite enviar formularios sin JavaScript personalizado -->
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inicio de sesión - BIOPAE</title>
+  <link rel="stylesheet" href="/static/css/inicio.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 <body>
-    <div class="login-container">
-        <img src="/static/imagenes/gordito.png" alt="Logo BIOPAE">
+  <main class="login-container">
+    <img src="/static/imagenes/gordito.png" alt="Logo BIOPAE">
+    <h2>Iniciar sesión</h2>
 
-        <h2>Iniciar Sesión</h2>
+    <form hx-post="/login"
+          hx-target="#login-mensaje"
+          hx-swap="innerHTML">
+      <input type="text" name="usuario" placeholder="Usuario"
+             autocomplete="username" required>
+      <input type="password" name="contrasena" placeholder="Contraseña"
+             autocomplete="current-password" required>
+      <button type="submit">Entrar</button>
+    </form>
 
-        <form
-            hx-post="/login"
-            hx-target="#login-mensaje"
-            hx-swap="innerHTML"
-        >
-            <input
-                type="text"
-                name="usuario"
-                placeholder="Usuario"
-                autocomplete="username"
-                required
-            >
-
-            <input
-                type="password"
-                name="contrasena"
-                placeholder="Contraseña"
-                autocomplete="current-password"
-                required
-            >
-
-            <button type="submit">Entrar</button>
-        </form>
-
-        <div id="login-mensaje" role="alert" aria-live="polite"></div>
-    </div>
+    <div id="login-mensaje" role="alert" aria-live="polite"></div>
+  </main>
 </body>
 </html>
