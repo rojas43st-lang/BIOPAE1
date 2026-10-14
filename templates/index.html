@@ -1,76 +1,46 @@
  <!DOCTYPE html>
 <html lang="es">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio de Sesión - BIOPAE</title>
 
-  <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/css/inicio.css">
 
-  <title>Inicio de Sesión</title>
-
- <link rel="stylesheet" href="/static/css/inicio.css">
-
+    <!-- HTMX: permite enviar formularios sin JavaScript personalizado -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
-
 <body>
+    <div class="login-container">
+        <img src="/static/imagenes/gordito.png" alt="Logo BIOPAE">
 
-  <div class="login-container">
+        <h2>Iniciar Sesión</h2>
 
-    <img src="/static/imagenes/gordito.png" alt="Logo">
+        <form
+            hx-post="/login"
+            hx-target="#login-mensaje"
+            hx-swap="innerHTML"
+        >
+            <input
+                type="text"
+                name="usuario"
+                placeholder="Usuario"
+                autocomplete="username"
+                required
+            >
 
-    <h2>Iniciar Sesión</h2>
+            <input
+                type="password"
+                name="contrasena"
+                placeholder="Contraseña"
+                autocomplete="current-password"
+                required
+            >
 
-    <input 
-      type="text"
-      id="usuario"
-      placeholder="Usuario"
-    >
+            <button type="submit">Entrar</button>
+        </form>
 
-    <input 
-      type="password"
-      id="contrasena"
-      placeholder="Contraseña"
-    >
-
-    <button onclick="entrar()">
-
-      Entrar
-
-    </button>
-
-  </div>
-
-
-
-  <script>
-
-    function entrar() {
-
-      // Obtener datos
-
-      let usuario = document.getElementById("usuario").value;
-
-      let contrasena = document.getElementById("contrasena").value;
-
-
-
-      if (
-        usuario === "carloselcalvito"
-        &&
-        contrasena === "1234"
-      ) {
-
-        window.location.href="/menu";
-
-      }
-
-      else {
-
-        alert("Usuario o contraseña incorrectos");
-
-      }
-
-    }
-
-  </script>
-
+        <div id="login-mensaje" role="alert" aria-live="polite"></div>
+    </div>
 </body>
 </html>
