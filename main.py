@@ -165,8 +165,11 @@ async def db_test():
             "detalle": str(e)
         }
 
+
+
+
 # =========================================================
-# INICIO DE SESIÓN CON HTMX
+# INICIO DE SESIÓN (HTMX)
 # =========================================================
 
 @app.post("/login", response_class=HTMLResponse)
@@ -177,26 +180,23 @@ async def iniciar_sesion(
     admin_usuario = os.getenv("ADMIN_USER")
     admin_contrasena = os.getenv("ADMIN_PASSWORD")
 
-    # Verificar que las credenciales estén configuradas.
     if not admin_usuario or not admin_contrasena:
         return HTMLResponse(
-            '<p role="alert">Faltan las credenciales '
-            'del administrador en el archivo .env.</p>'
+            '<p role="alert">Faltan las credenciales del administrador en .env.</p>',
+            status_code=500
         )
 
-    # Comprobar las credenciales en el servidor.
-    if (
-        usuario == admin_usuario
-        and contrasena == admin_contrasena
-    ):
+    if usuario == admin_usuario and contrasena == admin_contrasena:
         return HTMLResponse(
             content="",
             headers={"HX-Redirect": "/menu"}
         )
 
     return HTMLResponse(
-        '<p role="alert">Usuario o contraseña incorrectos.</p>'
+        '<p role="alert">Usuario o contraseña incorrectos.</p>',
+        status_code=401
     )
+
 
 # =========================================================
 # PÁGINAS
@@ -253,6 +253,65 @@ async def scanner(request: Request):
             "alimento_id": alimento_id
         }
     )
+
+
+
+
+# =========================================================
+# FRAGMENTOS HTML PARA HTMX
+# =========================================================
+
+@app.get("/fragmentos/alimentos/{alimento_id}/cantidad", response_class=HTMLResponse)
+async def fragmento_cantidad_alimento(request: Request, alimento_id: int):
+    if alimento_id not in (1, 2):
+        return HTMLResponse(
+            '<p class="mensaje-error">Alimento no válido.</p>',
+            status_code=400
+        )
+
+    try:
+        with obtener_conexion() as conn:
+            asegurar_reinicio_diario(conn)
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT nombre, cantidad, activo
+                    FROM alimentos
+                    WHERE id = %s
+                    """,
+                    (alimento_id,)
+                )
+                alimento = cur.fetchone()
+
+        if alimento is None:
+            return HTMLResponse(
+                '<p class="mensaje-error">Alimento no encontrado.</p>',
+                status_code=404
+            )
+
+        nombre, cantidad, activo = alimento
+        if not activo:
+            return HTMLResponse(
+                '<p class="mensaje-error">Este alimento está inactivo.</p>',
+                status_code=400
+            )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="partials/cantidad_alimento.html",
+            context={
+                "request": request,
+                "nombre": nombre,
+                "cantidad": cantidad,
+                "alimento_id": alimento_id,
+            }
+        )
+    except Exception:
+        traceback.print_exc()
+        return HTMLResponse(
+            '<p class="mensaje-error">No se pudo consultar la cantidad. Verifica la conexión con la base de datos.</p>',
+            status_code=500
+        )
 
 
 # =========================================================
