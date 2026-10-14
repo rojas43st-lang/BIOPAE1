@@ -165,6 +165,38 @@ async def db_test():
             "detalle": str(e)
         }
 
+# =========================================================
+# INICIO DE SESIÓN CON HTMX
+# =========================================================
+
+@app.post("/login", response_class=HTMLResponse)
+async def iniciar_sesion(
+    usuario: str = Form(...),
+    contrasena: str = Form(...)
+):
+    admin_usuario = os.getenv("ADMIN_USER")
+    admin_contrasena = os.getenv("ADMIN_PASSWORD")
+
+    # Verificar que las credenciales estén configuradas.
+    if not admin_usuario or not admin_contrasena:
+        return HTMLResponse(
+            '<p role="alert">Faltan las credenciales '
+            'del administrador en el archivo .env.</p>'
+        )
+
+    # Comprobar las credenciales en el servidor.
+    if (
+        usuario == admin_usuario
+        and contrasena == admin_contrasena
+    ):
+        return HTMLResponse(
+            content="",
+            headers={"HX-Redirect": "/menu"}
+        )
+
+    return HTMLResponse(
+        '<p role="alert">Usuario o contraseña incorrectos.</p>'
+    )
 
 # =========================================================
 # PÁGINAS
