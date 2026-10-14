@@ -104,3 +104,23 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Cantidad recibida desde el servidor mediante HTMX */
+#cantidad-alimento {
+  margin: 18px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.cantidad-valor {
+  font-size: 2.2rem;
+  font-weight: bold;
+}
+.cantidad-etiqueta {
+  font-size: 1rem;
+}
+.mensaje-error {
+  color: #b00020;
+  font-weight: bold;
+}
