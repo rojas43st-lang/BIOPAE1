@@ -32,15 +32,15 @@
         }
 
         .inventario {
-            max-width: 650px;
+            max-width: 500px;
             margin: 20px auto;
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: minmax(0, 1fr);
             gap: 15px;
         }
 
         .tarjeta {
-            padding: 20px 12px;
+            padding: 20px;
             border-radius: 15px;
             background: white;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.10);
@@ -53,11 +53,11 @@
 
         .tarjeta h3 {
             margin: 0 0 12px;
-            font-size: 17px;
+            font-size: 19px;
         }
 
         .cantidad {
-            font-size: 34px;
+            font-size: 38px;
             font-weight: bold;
             color: #26743a;
         }
@@ -68,7 +68,7 @@
 
         .estado-inventario {
             margin-top: 10px;
-            font-size: 13px;
+            font-size: 14px;
             color: #555;
         }
 
@@ -119,34 +119,13 @@
         }
 
         .recargar {
-            padding: 9px 15px;
+            padding: 10px 16px;
             background: #e2e8f0;
             color: #222;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-        }
-
-        @media (max-width: 420px) {
-            body {
-                padding: 12px;
-            }
-
-            .inventario {
-                gap: 8px;
-            }
-
-            .tarjeta {
-                padding: 15px 8px;
-            }
-
-            .tarjeta h3 {
-                font-size: 14px;
-            }
-
-            .cantidad {
-                font-size: 28px;
-            }
+            font-size: 15px;
         }
     </style>
 </head>
@@ -154,36 +133,50 @@
 <body>
 
     <h1>📷 Escáner BIOPAE</h1>
+
     <p>Escanea el código QR del estudiante</p>
 
     <div id="tipoAlimento"></div>
 
-    <!-- CANTIDADES DISPONIBLES -->
+    <!-- INVENTARIO DEL ALIMENTO SELECCIONADO -->
+
     <section class="inventario">
 
-        <div class="tarjeta">
-            <h3>🥛 Vasos de leche</h3>
+        <div class="tarjeta" id="tarjetaVasos">
+            <h3>🥛 Vasos de leche disponibles</h3>
+
             <div class="cantidad" id="cantidadVasos">--</div>
+
             <div class="estado-inventario" id="estadoVasos">
-                Consultando Neon...
+                Consultando...
             </div>
         </div>
 
-        <div class="tarjeta almuerzo">
-            <h3>🍽️ Almuerzos</h3>
+        <div class="tarjeta almuerzo" id="tarjetaAlmuerzos">
+            <h3>🍽️ Almuerzos disponibles</h3>
+
             <div class="cantidad" id="cantidadAlmuerzos">--</div>
+
             <div class="estado-inventario" id="estadoAlmuerzos">
-                Consultando Neon...
+                Consultando...
             </div>
         </div>
 
     </section>
 
-    <button class="recargar" type="button" onclick="cargarInventario()">
-        🔄 Actualizar cantidades
+    <button
+        class="recargar"
+        type="button"
+        onclick="cargarInventario()"
+    >
+        🔄 Actualizar cantidad
     </button>
 
+    <!-- ESCÁNER QR -->
+
     <div id="reader"></div>
+
+    <!-- RESULTADO DEL ESCANEO -->
 
     <div id="resultado">
 
@@ -196,12 +189,19 @@
 
         <p id="mensaje" aria-live="polite"></p>
 
-        <button class="boton nuevo" onclick="nuevoEscaneo()">
+        <button
+            class="boton nuevo"
+            onclick="nuevoEscaneo()"
+        >
             📷 Escanear otro
         </button>
 
-        <a id="volver" class="boton volver" href="/menu">
-            ⬅ Volver
+        <a
+            id="volver"
+            class="boton volver"
+            href="/menu"
+        >
+            ⬅ Volver al menú
         </a>
 
     </div>
@@ -209,99 +209,138 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <script>
+        // ================================================
         // ALIMENTO SELECCIONADO
+        // ================================================
 
         const alimentoId = Number("{{ alimento_id }}");
 
-        const tipoAlimento = document.getElementById("tipoAlimento");
-        const volver = document.getElementById("volver");
+        const tipoAlimento =
+            document.getElementById("tipoAlimento");
+
+        const volver =
+            document.getElementById("volver");
+
+        const tarjetaVasos =
+            document.getElementById("tarjetaVasos");
+
+        const tarjetaAlmuerzos =
+            document.getElementById("tarjetaAlmuerzos");
 
         if (alimentoId === 1) {
+
             tipoAlimento.textContent = "🥛 Vaso de leche";
-            volver.href = "/menu";
+
+            tarjetaVasos.style.display = "block";
+            tarjetaAlmuerzos.style.display = "none";
+
         } else if (alimentoId === 2) {
+
             tipoAlimento.textContent = "🍽️ Almuerzo";
-            volver.href = "/menu";
+
+            tarjetaVasos.style.display = "none";
+            tarjetaAlmuerzos.style.display = "block";
+
         } else {
+
             tipoAlimento.textContent = "Alimento no válido";
+
+            tarjetaVasos.style.display = "none";
+            tarjetaAlmuerzos.style.display = "none";
+
         }
 
-        // CONSULTAR CANTIDADES REALES EN NEON
+        // ================================================
+        // CONSULTAR CANTIDAD DEL ALIMENTO SELECCIONADO
+        // ================================================
 
         async function cargarInventario() {
-            const elementos = [
-                {
-                    id: 1,
-                    cantidad: document.getElementById("cantidadVasos"),
-                    estado: document.getElementById("estadoVasos")
-                },
-                {
-                    id: 2,
-                    cantidad: document.getElementById("cantidadAlmuerzos"),
-                    estado: document.getElementById("estadoAlmuerzos")
-                }
-            ];
 
-            await Promise.all(elementos.map(async function(item) {
-                item.estado.textContent = "Consultando Neon...";
+            const elementoCantidad =
+                alimentoId === 1
+                    ? document.getElementById("cantidadVasos")
+                    : document.getElementById("cantidadAlmuerzos");
 
-                try {
-                    const respuesta = await fetch(
-                        `/api/alimentos/${item.id}`,
-                        { cache: "no-store" }
+            const elementoEstado =
+                alimentoId === 1
+                    ? document.getElementById("estadoVasos")
+                    : document.getElementById("estadoAlmuerzos");
+
+            if (![1, 2].includes(alimentoId)) {
+                elementoCantidad.textContent = "--";
+                return;
+            }
+
+            elementoEstado.textContent = "Consultando Neon...";
+
+            try {
+
+                const respuesta = await fetch(
+                    `/api/alimentos/${alimentoId}`,
+                    { cache: "no-store" }
+                );
+
+                const datos = await respuesta.json();
+
+                if (!respuesta.ok || !datos.ok) {
+                    throw new Error(
+                        datos.mensaje || "No se pudo consultar el alimento."
                     );
-
-                    const datos = await respuesta.json();
-
-                    if (!respuesta.ok || !datos.ok) {
-                        throw new Error(
-                            datos.mensaje || "No se pudo consultar"
-                        );
-                    }
-
-                    item.cantidad.textContent = datos.cantidad;
-
-                    if (datos.activo === false) {
-                        item.estado.textContent = "Alimento inactivo";
-                    } else if (datos.cantidad <= 0) {
-                        item.estado.textContent = "Agotado";
-                    } else {
-                        item.estado.textContent = "Disponibles";
-                    }
-
-                } catch (error) {
-                    console.error(
-                        `Error consultando alimento ${item.id}:`,
-                        error
-                    );
-
-                    item.cantidad.textContent = "--";
-                    item.estado.textContent = "Error al consultar";
                 }
-            }));
+
+                elementoCantidad.textContent = datos.cantidad;
+
+                if (datos.activo === false) {
+
+                    elementoEstado.textContent = "Alimento inactivo";
+
+                } else if (Number(datos.cantidad) <= 0) {
+
+                    elementoEstado.textContent = "Agotado";
+
+                } else {
+
+                    elementoEstado.textContent = "Unidades disponibles";
+
+                }
+
+            } catch (error) {
+
+                console.error("Error consultando inventario:", error);
+
+                elementoCantidad.textContent = "--";
+                elementoEstado.textContent = "Error al consultar";
+            }
         }
 
+        // ================================================
         // VARIABLES DEL ESCÁNER
+        // ================================================
 
         let codigoEscaneado = null;
         let escanerActivo = true;
         let procesandoEntrega = false;
 
+        // ================================================
         // QR ENCONTRADO
+        // ================================================
 
         async function cuandoEscaneaQR(texto) {
+
             if (!escanerActivo || procesandoEntrega) {
                 return;
             }
 
             escanerActivo = false;
             procesandoEntrega = true;
+
             codigoEscaneado = texto.trim();
 
             document.getElementById("codigo").textContent =
                 codigoEscaneado;
 
-            document.getElementById("resultado").style.display = "block";
+            document.getElementById("resultado").style.display =
+                "block";
 
             try {
                 await scanner.clear();
@@ -312,13 +351,17 @@
             await registrarEntrega();
         }
 
+        // ================================================
         // ERRORES DEL LECTOR
+        // ================================================
 
         function errorEscaneo(error) {
-            // El lector busca continuamente un código QR.
+            // Se ejecuta mientras el lector busca un QR.
         }
 
+        // ================================================
         // CREAR ESCÁNER
+        // ================================================
 
         const scanner = new Html5QrcodeScanner(
             "reader",
@@ -336,24 +379,32 @@
             scanner.render(cuandoEscaneaQR, errorEscaneo);
         } else {
             document.getElementById("reader").textContent =
-                "No se ha seleccionado un alimento válido.";
+                "Selecciona un alimento válido desde el menú.";
         }
 
+        // ================================================
         // REGISTRAR ENTREGA
+        // ================================================
 
         async function registrarEntrega() {
-            const mensaje = document.getElementById("mensaje");
 
             if (!codigoEscaneado) {
                 procesandoEntrega = false;
                 return;
             }
 
+            const mensaje =
+                document.getElementById("mensaje");
+
             const estudianteId = Number(codigoEscaneado);
 
-            if (!Number.isInteger(estudianteId) || estudianteId <= 0) {
+            if (
+                !Number.isInteger(estudianteId) ||
+                estudianteId <= 0
+            ) {
                 mensaje.textContent =
                     "❌ El QR no contiene un ID válido.";
+
                 procesandoEntrega = false;
                 return;
             }
@@ -361,54 +412,66 @@
             mensaje.textContent = "⏳ Registrando entrega...";
 
             try {
-                const respuesta = await fetch("/api/escaneo", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        estudiante_id: estudianteId,
-                        alimento_id: alimentoId
-                    })
-                });
+
+                const respuesta = await fetch(
+                    "/api/escaneo",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            estudiante_id: estudianteId,
+                            alimento_id: alimentoId
+                        })
+                    }
+                );
 
                 const datos = await respuesta.json();
 
                 if (respuesta.ok && datos.ok) {
+
                     mensaje.textContent =
                         `✅ ${datos.estudiante} recibió ${datos.alimento}. ` +
                         `Quedan ${datos.cantidad_restante} disponibles.`;
 
-                    // Actualizar las dos cantidades desde Neon.
                     await cargarInventario();
 
                 } else {
+
                     mensaje.textContent =
                         "❌ " +
                         (datos.mensaje || "No se pudo registrar la entrega.");
 
-                    // Consultar de nuevo por si cambió el inventario.
                     await cargarInventario();
+
                 }
 
             } catch (error) {
-                console.error(error);
+
+                console.error("Error registrando entrega:", error);
 
                 mensaje.textContent =
                     "❌ Error de conexión con BIOPAE. " +
-                    "Verifica el estado de la entrega antes de volver a escanear.";
+                    "Comprueba las entregas antes de volver a escanear.";
+
             }
         }
 
+        // ================================================
         // NUEVO ESCANEO
+        // ================================================
 
         function nuevoEscaneo() {
             location.reload();
         }
 
-        // CONSULTAR AL ABRIR LA PÁGINA
+        // ================================================
+        // CARGAR CANTIDAD AL ABRIR LA PÁGINA
+        // ================================================
 
         cargarInventario();
+
     </script>
 
 </body>
