@@ -1,144 +1,134 @@
+
 import os
 import traceback
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+
 import psycopg
 from dotenv import load_dotenv
-load_dotenv()
-
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+load_dotenv()
 
 # =========================================================
-# CREAR APLICACIÓN
+# APLICACIÓN Y CONFIGURACIÓN
 # =========================================================
 
 app = FastAPI()
 
-
-# =========================================================
-# ARCHIVOS ESTÁTICOS Y PLANTILLAS
-# =========================================================
-
-app.mount(
-    "/static",
-    StaticFiles(directory="static"),
-    name="static"
-)
-
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+ZONA_HORARIA = ZoneInfo("America/Bogota")
+TIEMPO_REUTILIZACION_HORAS = 15
+
+# Cantidades iniciales de cada día.
+CANTIDAD_INICIAL_VASO = 50
+CANTIDAD_INICIAL_ALMUERZO = 80
+
+# IDs actuales en Neon:
+# 1 = Vaso de leche
+# 2 = Almuerzo
+ALIMENTOS_DIARIOS = (
+    (1, CANTIDAD_INICIAL_VASO),
+    (2, CANTIDAD_INICIAL_ALMUERZO),
+)
 
 
 # =========================================================
 # CONEXIÓN A NEON
 # =========================================================
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-ZONA_HORARIA = ZoneInfo("America/Bogota")
-
-# Tiempo de reutilización del QR.
-TIEMPO_REUTILIZACION_HORAS = 15
-
-# Cantidades que deben quedar disponibles al comenzar un nuevo día.
-CANTIDAD_INICIAL_VASO = 50
-CANTIDAD_INICIAL_ALMUERZO = 80
-
-
 def obtener_conexion():
     if not DATABASE_URL:
-        raise Exception("No se encontró DATABASE_URL")
+        raise RuntimeError(
+            "No se encontró la variable de entorno DATABASE_URL"
+        )
 
     conn = psycopg.connect(DATABASE_URL)
 
-    # Asegura que CURRENT_DATE y CURRENT_TIME de PostgreSQL
-    # correspondan a la hora de Colombia.
     with conn.cursor() as cur:
         cur.execute("SET TIME ZONE 'America/Bogota'")
 
     return conn
 
 
-def asegurar_reinicio_diario(conn):
-    """
-    Reinicia las cantidades una vez cuando comienza un nuevo día.
+# =========================================================
+# CREAR LOS CUPOS DEL DÍA
+# =========================================================
 
-    La primera vez que se usa esta función crea el control del día
-    pero NO cambia las cantidades actuales. A partir del día siguiente,
-    sí restablece vaso de leche y almuerzo a sus cantidades iniciales.
+def asegurar_cupos_diarios(conn):
+    """
+    Crea los cupos diarios si no existen.
+    No reinicia cantidades que ya hayan sido utilizadas.
     """
 
     with conn.cursor() as cur:
+        # Evita duplicados si llegan solicitudes simultáneas.
+        cur.execute("SELECT pg_advisory_xact_lock(6412026)")
 
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pae_control_diario (
-                id INTEGER PRIMARY KEY,
-                fecha_ultimo_reinicio DATE NOT NULL
-            )
-            """
-        )
+        cur.execute("SELECT CURRENT_DATE")
+        hoy = cur.fetchone()[0]
 
-        hoy = datetime.now(ZONA_HORARIA).date()
-
-        cur.execute(
-            """
-            SELECT fecha_ultimo_reinicio
-            FROM pae_control_diario
-            WHERE id = 1
-            """
-        )
-
-        control = cur.fetchone()
-
-        if control is None:
+        for alimento_id, cantidad_inicial in ALIMENTOS_DIARIOS:
             cur.execute(
                 """
-                INSERT INTO pae_control_diario (
-                    id,
-                    fecha_ultimo_reinicio
+                SELECT id
+                FROM cupos_diarios
+                WHERE alimento_id = %s
+                  AND fecha = %s
+                LIMIT 1
+                """,
+                (alimento_id, hoy),
+            )
+
+            if cur.fetchone() is None:
+                cur.execute(
+                    """
+                    INSERT INTO cupos_diarios (
+                        alimento_id,
+                        fecha,
+                        cantidad_disponible,
+                        cantidad_entregada
+                    )
+                    VALUES (%s, %s, %s, 0)
+                    """,
+                    (alimento_id, hoy, cantidad_inicial),
                 )
-                VALUES (1, %s)
-                """,
-                (hoy,)
-            )
 
-            conn.commit()
-            return
 
-        ultima_fecha = control[0]
+# =========================================================
+# CONSULTAR EL CUPO ACTUAL DE UN ALIMENTO
+# =========================================================
 
-        if ultima_fecha != hoy:
+def consultar_cupo_actual(cur, alimento_id, bloquear=False):
+    bloqueo = "FOR UPDATE OF cd" if bloquear else ""
 
-            cur.execute(
-                """
-                UPDATE alimentos
-                SET cantidad = CASE
-                    WHEN id = 1 THEN %s
-                    WHEN id = 2 THEN %s
-                    ELSE cantidad
-                END
-                WHERE id IN (1, 2)
-                """,
-                (
-                    CANTIDAD_INICIAL_VASO,
-                    CANTIDAD_INICIAL_ALMUERZO
-                )
-            )
+    cur.execute(
+        f"""
+        SELECT
+            a.id,
+            a.nombre,
+            a.activo,
+            cd.id AS cupo_diario_id,
+            cd.cantidad_disponible,
+            cd.cantidad_entregada,
+            cd.fecha
+        FROM alimentos AS a
+        JOIN cupos_diarios AS cd
+            ON cd.alimento_id = a.id
+           AND cd.fecha = CURRENT_DATE
+        WHERE a.id = %s
+        {bloqueo}
+        """,
+        (alimento_id,),
+    )
 
-            cur.execute(
-                """
-                UPDATE pae_control_diario
-                SET fecha_ultimo_reinicio = %s
-                WHERE id = 1
-                """,
-                (hoy,)
-            )
-
-            conn.commit()
+    return cur.fetchone()
 
 
 # =========================================================
@@ -153,49 +143,21 @@ async def db_test():
                 cur.execute("SELECT 1")
                 resultado = cur.fetchone()
 
-                return {
-                    "conexion": "ok",
-                    "resultado": resultado[0]
-                }
+        return {
+            "conexion": "ok",
+            "resultado": resultado[0],
+        }
 
     except Exception as e:
         traceback.print_exc()
-        return {
-            "conexion": "error",
-            "detalle": str(e)
-        }
 
-
-
-
-# =========================================================
-# INICIO DE SESIÓN (HTMX)
-# =========================================================
-
-@app.post("/login", response_class=HTMLResponse)
-async def iniciar_sesion(
-    usuario: str = Form(...),
-    contrasena: str = Form(...)
-):
-    admin_usuario = os.getenv("ADMIN_USER")
-    admin_contrasena = os.getenv("ADMIN_PASSWORD")
-
-    if not admin_usuario or not admin_contrasena:
-        return HTMLResponse(
-            '<p role="alert">Faltan las credenciales del administrador en .env.</p>',
-            status_code=500
+        return JSONResponse(
+            status_code=500,
+            content={
+                "conexion": "error",
+                "detalle": str(e),
+            },
         )
-
-    if usuario == admin_usuario and contrasena == admin_contrasena:
-        return HTMLResponse(
-            content="",
-            headers={"HX-Redirect": "/menu"}
-        )
-
-    return HTMLResponse(
-        '<p role="alert">Usuario o contraseña incorrectos.</p>',
-        status_code=401
-    )
 
 
 # =========================================================
@@ -207,7 +169,7 @@ async def inicio(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"request": request}
+        context={"request": request},
     )
 
 
@@ -216,7 +178,7 @@ async def menu(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="menu.html",
-        context={"request": request}
+        context={"request": request},
     )
 
 
@@ -225,7 +187,7 @@ async def vaso(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="vaso.html",
-        context={"request": request}
+        context={"request": request},
     )
 
 
@@ -234,7 +196,7 @@ async def almuerzo(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="almuerzo.html",
-        context={"request": request}
+        context={"request": request},
     )
 
 
@@ -242,7 +204,7 @@ async def almuerzo(request: Request):
 async def scanner(request: Request):
     alimento_id = request.query_params.get("alimento")
 
-    if alimento_id not in ["1", "2"]:
+    if alimento_id not in ("1", "2"):
         alimento_id = "1"
 
     return templates.TemplateResponse(
@@ -250,143 +212,70 @@ async def scanner(request: Request):
         name="scanner.html",
         context={
             "request": request,
-            "alimento_id": alimento_id
-        }
+            "alimento_id": alimento_id,
+        },
     )
 
 
-
-
 # =========================================================
-# FRAGMENTOS HTML PARA HTMX
-# =========================================================
-
-@app.get("/fragmentos/alimentos/{alimento_id}/cantidad", response_class=HTMLResponse)
-async def fragmento_cantidad_alimento(request: Request, alimento_id: int):
-    if alimento_id not in (1, 2):
-        return HTMLResponse(
-            '<p class="mensaje-error">Alimento no válido.</p>',
-            status_code=400
-        )
-
-    try:
-        with obtener_conexion() as conn:
-            asegurar_reinicio_diario(conn)
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT nombre, cantidad, activo
-                    FROM alimentos
-                    WHERE id = %s
-                    """,
-                    (alimento_id,)
-                )
-                alimento = cur.fetchone()
-
-        if alimento is None:
-            return HTMLResponse(
-                '<p class="mensaje-error">Alimento no encontrado.</p>',
-                status_code=404
-            )
-
-        nombre, cantidad, activo = alimento
-        if not activo:
-            return HTMLResponse(
-                '<p class="mensaje-error">Este alimento está inactivo.</p>',
-                status_code=400
-            )
-
-        return templates.TemplateResponse(
-            request=request,
-            name="partials/cantidad_alimento.html",
-            context={
-                "request": request,
-                "nombre": nombre,
-                "cantidad": cantidad,
-                "alimento_id": alimento_id,
-            }
-        )
-    except Exception:
-        traceback.print_exc()
-        return HTMLResponse(
-            '<p class="mensaje-error">No se pudo consultar la cantidad. Verifica la conexión con la base de datos.</p>',
-            status_code=500
-        )
-
-
-# =========================================================
-# CONSULTAR ALIMENTO
+# CONSULTAR ALIMENTO Y CANTIDAD DISPONIBLE
 # =========================================================
 
 @app.get("/api/alimentos/{alimento_id}")
 async def consultar_alimento(alimento_id: int):
     try:
         with obtener_conexion() as conn:
-
-            asegurar_reinicio_diario(conn)
+            asegurar_cupos_diarios(conn)
 
             with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT id, nombre, cantidad, activo
-                    FROM alimentos
-                    WHERE id = %s
-                    """,
-                    (alimento_id,)
+                alimento = consultar_cupo_actual(
+                    cur,
+                    alimento_id,
                 )
-
-                alimento = cur.fetchone()
 
                 if alimento is None:
                     return JSONResponse(
                         status_code=404,
                         content={
                             "ok": False,
-                            "mensaje": "Alimento no encontrado."
-                        }
+                            "mensaje": "Alimento no encontrado.",
+                        },
                     )
+
+                cantidad = alimento[4] or 0
+                entregada = alimento[5] or 0
 
                 return {
                     "ok": True,
                     "id": alimento[0],
                     "nombre": alimento[1],
-                    "cantidad": alimento[2],
-                    "activo": alimento[3]
+                    "activo": alimento[2],
+                    "cantidad": cantidad,
+                    "cantidad_disponible": cantidad,
+                    "cantidad_entregada": entregada,
+                    "cupo_diario_id": alimento[3],
+                    "fecha": str(alimento[6]),
                 }
 
     except Exception as e:
         traceback.print_exc()
+
         return JSONResponse(
             status_code=500,
             content={
                 "ok": False,
                 "mensaje": "Error consultando alimento.",
-                "detalle": str(e)
-            }
+                "detalle": str(e),
+            },
         )
 
 
 # =========================================================
-# ESCANEO QR Y ENTREGA
-# =========================================================
-#
-# El QR del estudiante debe contener su ID.
-# Ejemplo:
-#     1
-#
-# El frontend envía:
-# {
-#     "estudiante_id": 1,
-#     "alimento_id": 1
-# }
-#
-# alimento_id = 1 -> Vaso de leche
-# alimento_id = 2 -> Almuerzo
+# ESCANEO QR Y REGISTRO DE ENTREGA
 # =========================================================
 
 @app.post("/api/escaneo")
 async def escaneo_qr(data: dict):
-
     estudiante_id = data.get("estudiante_id")
     alimento_id = data.get("alimento_id")
 
@@ -395,20 +284,21 @@ async def escaneo_qr(data: dict):
             status_code=400,
             content={
                 "ok": False,
-                "mensaje": "Faltan datos del escaneo."
-            }
+                "mensaje": "Faltan datos del escaneo.",
+            },
         )
 
     try:
         estudiante_id = int(estudiante_id)
         alimento_id = int(alimento_id)
+
     except (ValueError, TypeError):
         return JSONResponse(
             status_code=400,
             content={
                 "ok": False,
-                "mensaje": "El ID recibido no es válido."
-            }
+                "mensaje": "El ID recibido no es válido.",
+            },
         )
 
     if alimento_id not in (1, 2):
@@ -416,30 +306,25 @@ async def escaneo_qr(data: dict):
             status_code=400,
             content={
                 "ok": False,
-                "mensaje": "El alimento seleccionado no es válido."
-            }
+                "mensaje": "El alimento seleccionado no es válido.",
+            },
         )
 
     try:
         with obtener_conexion() as conn:
-
-            # Reiniciar alimentos si comenzó un nuevo día.
-            asegurar_reinicio_diario(conn)
+            asegurar_cupos_diarios(conn)
 
             with conn.cursor() as cur:
 
-                # -------------------------------------------------
-                # BUSCAR ESTUDIANTE
-                # -------------------------------------------------
-
+                # 1. Buscar estudiante activo.
                 cur.execute(
                     """
                     SELECT id, nombre, apellido
                     FROM estudiantes
                     WHERE id = %s
-                    AND activo = TRUE
+                      AND activo = TRUE
                     """,
-                    (estudiante_id,)
+                    (estudiante_id,),
                 )
 
                 estudiante = cur.fetchone()
@@ -449,14 +334,14 @@ async def escaneo_qr(data: dict):
                         status_code=404,
                         content={
                             "ok": False,
-                            "mensaje": "El estudiante no existe o está inactivo."
-                        }
+                            "mensaje": (
+                                "El estudiante no existe "
+                                "o está inactivo."
+                            ),
+                        },
                     )
 
-                # -------------------------------------------------
-                # COMPROBAR BLOQUEO DE 15 HORAS DEL QR
-                # -------------------------------------------------
-
+                # 2. Verificar el bloqueo de reutilización del QR.
                 cur.execute(
                     """
                     SELECT fecha, hora
@@ -465,38 +350,34 @@ async def escaneo_qr(data: dict):
                     ORDER BY fecha DESC, hora DESC
                     LIMIT 1
                     """,
-                    (estudiante_id,)
+                    (estudiante_id,),
                 )
 
                 ultima_entrega = cur.fetchone()
 
-                ahora = datetime.now(ZONA_HORARIA).replace(tzinfo=None)
+                ahora = datetime.now(
+                    ZONA_HORARIA
+                ).replace(tzinfo=None)
 
                 if ultima_entrega:
-
-                    ultima_fecha = ultima_entrega[0]
-                    ultima_hora = ultima_entrega[1]
-
                     ultima_fecha_hora = datetime.combine(
-                        ultima_fecha,
-                        ultima_hora
+                        ultima_entrega[0],
+                        ultima_entrega[1],
                     )
 
                     siguiente_uso = (
                         ultima_fecha_hora
-                        + timedelta(hours=TIEMPO_REUTILIZACION_HORAS)
+                        + timedelta(
+                            hours=TIEMPO_REUTILIZACION_HORAS
+                        )
                     )
 
                     if ahora < siguiente_uso:
-
                         restante = siguiente_uso - ahora
                         segundos = max(
                             0,
-                            int(restante.total_seconds())
+                            int(restante.total_seconds()),
                         )
-
-                        horas = segundos // 3600
-                        minutos = (segundos % 3600) // 60
 
                         return JSONResponse(
                             status_code=409,
@@ -504,132 +385,164 @@ async def escaneo_qr(data: dict):
                                 "ok": False,
                                 "motivo": "qr_bloqueado",
                                 "mensaje": (
-                                    f"{estudiante[1]} {estudiante[2]} "
-                                    f"no puede reutilizar el código QR todavía."
+                                    f"{estudiante[1]} "
+                                    f"{estudiante[2]} "
+                                    "no puede reutilizar "
+                                    "el código QR todavía."
                                 ),
-                                "horas_restantes": horas,
-                                "minutos_restantes": minutos,
-                                "proximo_uso": siguiente_uso.isoformat()
-                            }
+                                "horas_restantes": segundos // 3600,
+                                "minutos_restantes": (
+                                    segundos % 3600
+                                ) // 60,
+                                "proximo_uso": (
+                                    siguiente_uso.isoformat()
+                                ),
+                            },
                         )
 
-                # -------------------------------------------------
-                # BUSCAR ALIMENTO
-                # -------------------------------------------------
-
-                cur.execute(
-                    """
-                    SELECT id, nombre, cantidad
-                    FROM alimentos
-                    WHERE id = %s
-                    AND activo = TRUE
-                    FOR UPDATE
-                    """,
-                    (alimento_id,)
+                # 3. Buscar y bloquear el cupo de hoy.
+                cupo = consultar_cupo_actual(
+                    cur,
+                    alimento_id,
+                    bloquear=True,
                 )
 
-                alimento = cur.fetchone()
-
-                if alimento is None:
+                if cupo is None:
                     return JSONResponse(
                         status_code=404,
                         content={
                             "ok": False,
-                            "mensaje": "El alimento no existe o está inactivo."
-                        }
+                            "mensaje": "El alimento no existe.",
+                        },
                     )
 
-                alimento_id_db = alimento[0]
-                alimento_nombre = alimento[1]
-                cantidad = alimento[2]
-
-                if cantidad <= 0:
+                if not cupo[2]:
                     return JSONResponse(
                         status_code=400,
                         content={
                             "ok": False,
-                            "mensaje": f"No quedan {alimento_nombre} disponibles."
-                        }
+                            "mensaje": "El alimento está inactivo.",
+                        },
                     )
 
-                # -------------------------------------------------
-                # DESCONTAR ALIMENTO
-                # -------------------------------------------------
+                cupo_diario_id = cupo[3]
+                cantidad_disponible = cupo[4]
+                alimento_nombre = cupo[1]
 
+                if (
+                    cupo_diario_id is None
+                    or cantidad_disponible is None
+                ):
+                    return JSONResponse(
+                        status_code=500,
+                        content={
+                            "ok": False,
+                            "mensaje": (
+                                "No se encontró el cupo "
+                                "diario del alimento."
+                            ),
+                        },
+                    )
+
+                if cantidad_disponible <= 0:
+                    return JSONResponse(
+                        status_code=400,
+                        content={
+                            "ok": False,
+                            "mensaje": (
+                                f"No quedan {alimento_nombre} "
+                                "disponibles."
+                            ),
+                        },
+                    )
+
+                # 4. Descontar una unidad y actualizar el contador.
                 cur.execute(
                     """
-                    UPDATE alimentos
-                    SET cantidad = cantidad - 1
+                    UPDATE cupos_diarios
+                    SET cantidad_disponible =
+                            cantidad_disponible - 1,
+                        cantidad_entregada =
+                            COALESCE(cantidad_entregada, 0) + 1
                     WHERE id = %s
-                    AND cantidad > 0
-                    RETURNING cantidad
+                      AND cantidad_disponible > 0
+                    RETURNING
+                        cantidad_disponible,
+                        cantidad_entregada
                     """,
-                    (alimento_id_db,)
+                    (cupo_diario_id,),
                 )
 
-                resultado = cur.fetchone()
+                actualizado = cur.fetchone()
 
-                if resultado is None:
+                if actualizado is None:
                     return JSONResponse(
-                        status_code=400,
+                        status_code=409,
                         content={
                             "ok": False,
-                            "mensaje": "No fue posible descontar el alimento."
-                        }
+                            "mensaje": (
+                                "No fue posible actualizar "
+                                "el cupo. Vuelve a consultar."
+                            ),
+                        },
                     )
 
-                cantidad_restante = resultado[0]
-
-                # -------------------------------------------------
-                # REGISTRAR ENTREGA
-                # -------------------------------------------------
-
+                cantidad_restante = actualizado[0]
                 ahora_bd = datetime.now(ZONA_HORARIA)
 
+                # 5. Registrar la entrega vinculada al cupo diario.
                 cur.execute(
                     """
                     INSERT INTO entregas (
                         estudiante_id,
                         alimento_id,
+                        cupo_diario_id,
                         fecha,
                         hora,
+                        tipo_entrega,
                         estado,
                         observacion
                     )
                     VALUES (
-                        %s,
-                        %s,
-                        %s,
-                        %s,
+                        %s, %s, %s, %s, %s,
+                        'normal',
                         'entregado',
-                        'Entrega realizada mediante código QR'
+                        %s
                     )
                     """,
                     (
                         estudiante_id,
-                        alimento_id_db,
+                        alimento_id,
+                        cupo_diario_id,
                         ahora_bd.date(),
-                        ahora_bd.time()
-                    )
+                        ahora_bd.time().replace(tzinfo=None),
+                        "Entrega realizada mediante código QR",
+                    ),
                 )
-
-                conn.commit()
 
                 siguiente_uso = (
                     ahora_bd.replace(tzinfo=None)
-                    + timedelta(hours=TIEMPO_REUTILIZACION_HORAS)
+                    + timedelta(
+                        hours=TIEMPO_REUTILIZACION_HORAS
+                    )
                 )
 
                 return {
                     "ok": True,
                     "mensaje": "Entrega registrada correctamente.",
                     "estudiante_id": estudiante[0],
-                    "estudiante": f"{estudiante[1]} {estudiante[2]}",
-                    "alimento_id": alimento_id_db,
+                    "estudiante": (
+                        f"{estudiante[1]} {estudiante[2]}"
+                    ),
+                    "alimento_id": alimento_id,
                     "alimento": alimento_nombre,
                     "cantidad_restante": cantidad_restante,
-                    "qr_reutilizable_en_horas": TIEMPO_REUTILIZACION_HORAS,
-                    "proximo_uso_qr": siguiente_uso.isoformat()
+                    "cantidad_entregada": actualizado[1],
+                    "cupo_diario_id": cupo_diario_id,
+                    "qr_reutilizable_en_horas": (
+                        TIEMPO_REUTILIZACION_HORAS
+                    ),
+                    "proximo_uso_qr": siguiente_uso.isoformat(),
                 }
 
     except Exception as e:
@@ -640,8 +553,8 @@ async def escaneo_qr(data: dict):
             content={
                 "ok": False,
                 "mensaje": "Error al procesar el escaneo.",
-                "detalle": str(e)
-            }
+                "detalle": str(e),
+            },
         )
 
 
@@ -651,12 +564,11 @@ async def escaneo_qr(data: dict):
 
 @app.get("/api/entregas")
 async def consultar_entregas(fecha: str = None):
-
     try:
         with obtener_conexion() as conn:
             with conn.cursor() as cur:
 
-                if not fecha:
+                if fecha:
                     cur.execute(
                         """
                         SELECT
@@ -670,15 +582,17 @@ async def consultar_entregas(fecha: str = None):
                             e.hora,
                             e.estado,
                             e.observacion
-                        FROM entregas e
-                        JOIN estudiantes est
+                        FROM entregas AS e
+                        JOIN estudiantes AS est
                             ON est.id = e.estudiante_id
-                        JOIN alimentos a
+                        JOIN alimentos AS a
                             ON a.id = e.alimento_id
-                        WHERE e.fecha = CURRENT_DATE
+                        WHERE e.fecha = %s
                         ORDER BY e.hora DESC
-                        """
+                        """,
+                        (fecha,),
                     )
+
                 else:
                     cur.execute(
                         """
@@ -693,153 +607,153 @@ async def consultar_entregas(fecha: str = None):
                             e.hora,
                             e.estado,
                             e.observacion
-                        FROM entregas e
-                        JOIN estudiantes est
+                        FROM entregas AS e
+                        JOIN estudiantes AS est
                             ON est.id = e.estudiante_id
-                        JOIN alimentos a
+                        JOIN alimentos AS a
                             ON a.id = e.alimento_id
-                        WHERE e.fecha = %s
+                        WHERE e.fecha = CURRENT_DATE
                         ORDER BY e.hora DESC
-                        """,
-                        (fecha,)
+                        """
                     )
 
                 entregas = cur.fetchall()
 
-                resultado = []
-
-                for entrega in entregas:
-                    resultado.append({
-                        "id": entrega[0],
-                        "estudiante_id": entrega[1],
-                        "nombre": entrega[2],
-                        "apellido": entrega[3],
-                        "alimento_id": entrega[4],
-                        "alimento": entrega[5],
-                        "fecha": str(entrega[6]),
-                        "hora": str(entrega[7]),
-                        "estado": entrega[8],
-                        "observacion": entrega[9]
-                    })
+                resultado = [
+                    {
+                        "id": fila[0],
+                        "estudiante_id": fila[1],
+                        "nombre": fila[2],
+                        "apellido": fila[3],
+                        "alimento_id": fila[4],
+                        "alimento": fila[5],
+                        "fecha": str(fila[6]),
+                        "hora": str(fila[7]),
+                        "estado": fila[8],
+                        "observacion": fila[9],
+                    }
+                    for fila in entregas
+                ]
 
                 return {
                     "ok": True,
                     "total": len(resultado),
-                    "entregas": resultado
+                    "entregas": resultado,
                 }
 
     except Exception as e:
         traceback.print_exc()
+
         return JSONResponse(
             status_code=500,
             content={
                 "ok": False,
                 "mensaje": "Error consultando las entregas.",
-                "detalle": str(e)
-            }
+                "detalle": str(e),
+            },
         )
 
 
 # =========================================================
-# OBTENER ALIMENTO
+# OBTENER DETALLE DE ALIMENTO
 # =========================================================
 
 @app.get("/api/alimentos/{alimento_id}/detalle")
 def obtener_alimento(alimento_id: int):
-
     try:
         with obtener_conexion() as conn:
-
-            asegurar_reinicio_diario(conn)
+            asegurar_cupos_diarios(conn)
 
             with conn.cursor() as cur:
-
-                cur.execute(
-                    """
-                    SELECT id, nombre, cantidad, activo
-                    FROM alimentos
-                    WHERE id = %s
-                    """,
-                    (alimento_id,)
+                alimento = consultar_cupo_actual(
+                    cur,
+                    alimento_id,
                 )
-
-                alimento = cur.fetchone()
 
                 if alimento is None:
                     return JSONResponse(
                         status_code=404,
                         content={
                             "ok": False,
-                            "mensaje": "Alimento no encontrado"
-                        }
+                            "mensaje": "Alimento no encontrado.",
+                        },
                     )
+
+                cantidad = alimento[4] or 0
+                entregada = alimento[5] or 0
 
                 return {
                     "ok": True,
                     "id": alimento[0],
                     "nombre": alimento[1],
-                    "cantidad": alimento[2],
-                    "activo": alimento[3]
+                    "activo": alimento[2],
+                    "cantidad": cantidad,
+                    "cantidad_disponible": cantidad,
+                    "cantidad_entregada": entregada,
+                    "cupo_diario_id": alimento[3],
+                    "fecha": str(alimento[6]),
                 }
 
     except Exception as e:
         traceback.print_exc()
+
         return JSONResponse(
             status_code=500,
             content={
                 "ok": False,
-                "mensaje": "Error al consultar alimento",
-                "detalle": str(e)
-            }
+                "mensaje": "Error al consultar alimento.",
+                "detalle": str(e),
+            },
         )
 
 
 # =========================================================
-# DESCONTAR ALIMENTO
+# DESCONTAR ALIMENTO (AJUSTE MANUAL)
 # =========================================================
 
 @app.post("/api/alimentos/{alimento_id}/descontar")
 def descontar_alimento(alimento_id: int):
-
     try:
         with obtener_conexion() as conn:
-
-            asegurar_reinicio_diario(conn)
+            asegurar_cupos_diarios(conn)
 
             with conn.cursor() as cur:
-
-                cur.execute(
-                    """
-                    SELECT id, nombre, cantidad, activo
-                    FROM alimentos
-                    WHERE id = %s
-                    FOR UPDATE
-                    """,
-                    (alimento_id,)
+                alimento = consultar_cupo_actual(
+                    cur,
+                    alimento_id,
+                    bloquear=True,
                 )
-
-                alimento = cur.fetchone()
 
                 if alimento is None:
                     return JSONResponse(
                         status_code=404,
                         content={
                             "ok": False,
-                            "mensaje": "Alimento no encontrado"
-                        }
+                            "mensaje": "Alimento no encontrado.",
+                        },
                     )
 
-                cantidad = alimento[2]
-                nombre = alimento[1]
-                activo = alimento[3]
-
-                if not activo:
+                if not alimento[2]:
                     return JSONResponse(
                         status_code=400,
                         content={
                             "ok": False,
-                            "mensaje": f"{nombre} está inactivo"
-                        }
+                            "mensaje": (
+                                f"{alimento[1]} está inactivo."
+                            ),
+                        },
+                    )
+
+                cupo_id = alimento[3]
+                cantidad = alimento[4]
+
+                if cupo_id is None or cantidad is None:
+                    return JSONResponse(
+                        status_code=404,
+                        content={
+                            "ok": False,
+                            "mensaje": "No existe un cupo para hoy.",
+                        },
                     )
 
                 if cantidad <= 0:
@@ -847,38 +761,61 @@ def descontar_alimento(alimento_id: int):
                         status_code=400,
                         content={
                             "ok": False,
-                            "mensaje": f"No quedan {nombre.lower()} disponibles"
-                        }
+                            "mensaje": (
+                                f"No quedan {alimento[1].lower()} "
+                                "disponibles."
+                            ),
+                        },
                     )
-
-                nueva_cantidad = cantidad - 1
 
                 cur.execute(
                     """
-                    UPDATE alimentos
-                    SET cantidad = %s
+                    UPDATE cupos_diarios
+                    SET cantidad_disponible =
+                            cantidad_disponible - 1,
+                        cantidad_entregada =
+                            COALESCE(cantidad_entregada, 0) + 1
                     WHERE id = %s
+                      AND cantidad_disponible > 0
+                    RETURNING
+                        cantidad_disponible,
+                        cantidad_entregada
                     """,
-                    (nueva_cantidad, alimento_id)
+                    (cupo_id,),
                 )
 
-                conn.commit()
+                resultado = cur.fetchone()
+
+                if resultado is None:
+                    return JSONResponse(
+                        status_code=409,
+                        content={
+                            "ok": False,
+                            "mensaje": (
+                                "No fue posible descontar el cupo."
+                            ),
+                        },
+                    )
 
                 return {
                     "ok": True,
                     "id": alimento_id,
-                    "nombre": nombre,
+                    "nombre": alimento[1],
                     "cantidad_anterior": cantidad,
-                    "cantidad": nueva_cantidad
+                    "cantidad": resultado[0],
+                    "cantidad_disponible": resultado[0],
+                    "cantidad_entregada": resultado[1],
+                    "cupo_diario_id": cupo_id,
                 }
 
     except Exception as e:
         traceback.print_exc()
+
         return JSONResponse(
             status_code=500,
             content={
                 "ok": False,
-                "mensaje": "Error al descontar alimento",
-                "detalle": str(e)
-            }
+                "mensaje": "Error al descontar alimento.",
+                "detalle": str(e),
+            },
         )
