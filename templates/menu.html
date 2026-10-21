@@ -4,15 +4,12 @@
 <head>
   <meta charset="UTF-8">
   <title>Menú PAE</title>
-
   <link rel="stylesheet" href="/static/css/menu.css">
 </head>
 
 <body>
 
-  <!-- =====================================================
-       MENÚ PRINCIPAL
-  ====================================================== -->
+  <!-- MENÚ PRINCIPAL -->
 
   <div class="content">
 
@@ -28,16 +25,12 @@
 
     <div class="menu">
 
-      <a href="/vaso" class="card">
+      <a href="/scanner?alimento=1" class="card">
         🥛 Vaso de leche
       </a>
 
-      <a href="/almuerzo" class="card">
-        🍽 Almuerzo
-      </a>
-
-      <a href="/scanner" class="card">
-        📷 Escanear QR
+      <a href="/scanner?alimento=2" class="card">
+        🍽️ Almuerzo
       </a>
 
     </div>
@@ -51,32 +44,19 @@
 
   </div>
 
-
-  <!-- =====================================================
-       CERRAR SESIÓN
-  ====================================================== -->
+  <!-- CERRAR SESIÓN -->
 
   <script>
-
     function cerrarSesion() {
-
       window.location.href = "/";
-
     }
-
   </script>
 
-
-  <!-- =====================================================
-       SCRIPT PRINCIPAL
-  ====================================================== -->
+  <!-- SCRIPT PRINCIPAL -->
 
   <script src="/static/js/script.js"></script>
 
-
-  <!-- =====================================================
-       MENÚ DE TRES PUNTOS
-  ====================================================== -->
+  <!-- MENÚ DE TRES PUNTOS -->
 
   <div class="menu-container">
 
@@ -86,7 +66,6 @@
     >
       ⋮
     </button>
-
 
     <div
       class="menu-opciones"
@@ -105,15 +84,9 @@
 
   </div>
 
+  <!-- MODAL GENERAL -->
 
-  <!-- =====================================================
-       MODAL GENERAL
-  ====================================================== -->
-
-  <div
-    class="modal"
-    id="modal"
-  >
+  <div class="modal" id="modal">
 
     <div class="modal-contenido">
 
@@ -130,10 +103,7 @@
 
   </div>
 
-
-  <!-- =====================================================
-       BOTÓN PANEL
-  ====================================================== -->
+  <!-- BOTÓN PANEL -->
 
   <button
     class="panel-btn"
@@ -142,15 +112,9 @@
     📊 Panel
   </button>
 
+  <!-- PANEL ADMINISTRATIVO -->
 
-  <!-- =====================================================
-       PANEL ADMINISTRATIVO
-  ====================================================== -->
-
-  <div
-    class="modal"
-    id="panelModal"
-  >
+  <div class="modal" id="panelModal">
 
     <div
       class="modal-contenido"
@@ -164,12 +128,9 @@
         &times;
       </span>
 
-
       <div id="panelInicio">
 
-        <h1>
-          Panel administrativo BIOPAE
-        </h1>
+        <h1>Panel administrativo BIOPAE</h1>
 
         <h3 style="margin-top:20px;">
           Consultar entregas
@@ -179,10 +140,7 @@
           Seleccione una fecha para consultar los datos registrados en Neon.
         </p>
 
-
-        <!-- =================================================
-             BUSCAR FECHA
-        ================================================== -->
+        <!-- BUSCAR FECHA -->
 
         <div
           style="
@@ -216,10 +174,7 @@
 
         </div>
 
-
-        <!-- =================================================
-             MENSAJE
-        ================================================== -->
+        <!-- MENSAJE -->
 
         <div
           id="mensajePanel"
@@ -230,10 +185,7 @@
           "
         ></div>
 
-
-        <!-- =================================================
-             ESTADÍSTICAS
-        ================================================== -->
+        <!-- ESTADÍSTICAS -->
 
         <div
           id="estadisticasDia"
@@ -245,8 +197,7 @@
 
           <h2 id="tituloFecha"></h2>
 
-
-          <!-- TARJETAS -->
+          <!-- TARJETAS DE ESTADÍSTICAS -->
 
           <div
             style="
@@ -268,16 +219,11 @@
 
               <h3>🥛 Vaso de leche</h3>
 
-              <h2 id="totalVasos">
-                0
-              </h2>
+              <h2 id="totalVasos">0</h2>
 
-              <p>
-                entregados
-              </p>
+              <p>entregados</p>
 
             </div>
-
 
             <div
               style="
@@ -290,16 +236,11 @@
 
               <h3>🍽 Almuerzo</h3>
 
-              <h2 id="totalAlmuerzos">
-                0
-              </h2>
+              <h2 id="totalAlmuerzos">0</h2>
 
-              <p>
-                entregados
-              </p>
+              <p>entregados</p>
 
             </div>
-
 
             <div
               style="
@@ -312,27 +253,19 @@
 
               <h3>👥 Total</h3>
 
-              <h2 id="totalEntregas">
-                0
-              </h2>
+              <h2 id="totalEntregas">0</h2>
 
-              <p>
-                entregas
-              </p>
+              <p>entregas</p>
 
             </div>
 
           </div>
 
-
-          <!-- =================================================
-               TABLA DE ENTREGAS
-          ================================================== -->
+          <!-- TABLA DE ENTREGAS -->
 
           <h2 style="margin-top:30px;">
             Entregas del día
           </h2>
-
 
           <div
             style="
@@ -394,19 +327,13 @@
 
               </thead>
 
-
-              <tbody id="tablaEntregas">
-
-              </tbody>
+              <tbody id="tablaEntregas"></tbody>
 
             </table>
 
           </div>
 
-
-          <!-- =================================================
-               VOLVER
-          ================================================== -->
+          <!-- VOLVER -->
 
           <button
             class="logout-btn"
@@ -424,10 +351,7 @@
 
   </div>
 
-
-  <!-- =====================================================
-       JAVASCRIPT DEL PANEL
-  ====================================================== -->
+  <!-- JAVASCRIPT DEL PANEL -->
 
   <script>
 
@@ -436,25 +360,19 @@
      */
 
     function abrirPanelReal() {
-
       document.getElementById("panelModal").style.display = "flex";
-
     }
-
 
     /*
      * Cerrar panel
      */
 
     function cerrarPanelReal() {
-
       document.getElementById("panelModal").style.display = "none";
-
     }
 
-
     /*
-     * Consultar fecha
+     * Consultar entregas por fecha
      */
 
     async function cargarFechaPanel() {
@@ -471,7 +389,6 @@
       const tabla =
         document.getElementById("tablaEntregas");
 
-
       /*
        * Comprobar que haya fecha
        */
@@ -486,9 +403,7 @@
         estadisticas.style.display = "none";
 
         return;
-
       }
-
 
       /*
        * Mensaje mientras carga
@@ -499,22 +414,17 @@
 
       mensaje.style.color = "#1f7a8c";
 
-
       try {
 
         /*
          * Consultar API
          */
 
-        const respuesta =
-          await fetch(
-            `/api/entregas?fecha=${fecha}`
-          );
+        const respuesta = await fetch(
+          `/api/entregas?fecha=${encodeURIComponent(fecha)}`
+        );
 
-
-        const datos =
-          await respuesta.json();
-
+        const datos = await respuesta.json();
 
         /*
          * Comprobar respuesta
@@ -529,7 +439,6 @@
 
         }
 
-
         /*
          * Mostrar estadísticas
          */
@@ -537,67 +446,52 @@
         const entregas =
           datos.entregas || [];
 
-
         let vasos = 0;
-
         let almuerzos = 0;
-
 
         entregas.forEach(function(entrega) {
 
           if (entrega.alimento_id == 1) {
-
             vasos++;
-
           }
 
           if (entrega.alimento_id == 2) {
-
             almuerzos++;
-
           }
 
         });
-
 
         document.getElementById(
           "totalVasos"
         ).textContent = vasos;
 
-
         document.getElementById(
           "totalAlmuerzos"
         ).textContent = almuerzos;
-
 
         document.getElementById(
           "totalEntregas"
         ).textContent = entregas.length;
 
-
         /*
          * Formatear fecha
          */
 
-        const partes =
-          fecha.split("-");
+        const partes = fecha.split("-");
 
         const fechaBonita =
           `${partes[2]}/${partes[1]}/${partes[0]}`;
-
 
         document.getElementById(
           "tituloFecha"
         ).textContent =
           `📅 Entregas del ${fechaBonita}`;
 
-
         /*
          * Limpiar tabla
          */
 
         tabla.innerHTML = "";
-
 
         /*
          * Si no hay entregas
@@ -622,74 +516,65 @@
 
         }
 
-
         /*
          * Crear filas
          */
 
         entregas.forEach(function(entrega) {
 
-          const fila =
-            document.createElement("tr");
-
+          const fila = document.createElement("tr");
 
           const nombreCompleto =
             `${entrega.nombre} ${entrega.apellido}`;
 
+          const celdaEstudiante =
+            document.createElement("td");
 
-          fila.innerHTML = `
+          celdaEstudiante.style.cssText =
+            "padding:12px;border-bottom:1px solid #ddd;";
 
-            <td
-              style="
-                padding:12px;
-                border-bottom:1px solid #ddd;
-              "
-            >
-              ${nombreCompleto}
-            </td>
+          celdaEstudiante.textContent = nombreCompleto;
 
-            <td
-              style="
-                padding:12px;
-                border-bottom:1px solid #ddd;
-              "
-            >
-              ${
-                entrega.alimento_id == 1
-                ? "🥛 Vaso de leche"
-                : "🍽 Almuerzo"
-              }
-            </td>
+          const celdaAlimento =
+            document.createElement("td");
 
-            <td
-              style="
-                padding:12px;
-                border-bottom:1px solid #ddd;
-              "
-            >
-              ${entrega.hora}
-            </td>
+          celdaAlimento.style.cssText =
+            "padding:12px;border-bottom:1px solid #ddd;";
 
-            <td
-              style="
-                padding:12px;
-                border-bottom:1px solid #ddd;
-              "
-            >
-              ${
-                entrega.estado === "entregado"
-                ? "✅ Entregado"
-                : entrega.estado
-              }
-            </td>
+          celdaAlimento.textContent =
+            entrega.alimento_id == 1
+              ? "🥛 Vaso de leche"
+              : "🍽 Almuerzo";
 
-          `;
+          const celdaHora =
+            document.createElement("td");
 
+          celdaHora.style.cssText =
+            "padding:12px;border-bottom:1px solid #ddd;";
+
+          celdaHora.textContent = entrega.hora ?? "";
+
+          const celdaEstado =
+            document.createElement("td");
+
+          celdaEstado.style.cssText =
+            "padding:12px;border-bottom:1px solid #ddd;";
+
+          celdaEstado.textContent =
+            entrega.estado === "entregado"
+              ? "✅ Entregado"
+              : (entrega.estado ?? "");
+
+          fila.append(
+            celdaEstudiante,
+            celdaAlimento,
+            celdaHora,
+            celdaEstado
+          );
 
           tabla.appendChild(fila);
 
         });
-
 
         /*
          * Mostrar resultados
@@ -719,7 +604,6 @@
 
     }
 
-
     /*
      * Volver
      */
@@ -736,9 +620,8 @@
 
     }
 
-
     /*
-     * Permitir presionar Enter
+     * Consultar al cambiar la fecha
      */
 
     document.getElementById(
@@ -746,9 +629,7 @@
     ).addEventListener(
       "change",
       function() {
-
         cargarFechaPanel();
-
       }
     );
 
